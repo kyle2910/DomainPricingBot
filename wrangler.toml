@@ -1,0 +1,12 @@
+name = "domainpricingbot"
+main = "src/index.ts"
+compatibility_date = "2026-08-25"
+
+# Cấu hình D1 Database
+[[d1_databases]]
+binding = "DB"
+database_name = "domainpricingdb"
+
+# Cấu hình Static Assets cho thư mục chứa file CSV
+[assets]
+directory = "./csv"
