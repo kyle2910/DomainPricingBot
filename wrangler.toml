@@ -1,12 +1,19 @@
-name = "domainpricingbot"
+name = "domain-pricing-bot"
 main = "src/index.ts"
-compatibility_date = "2026-08-25"
+compatibility_date = "2025-06-01"
 
-# Cấu hình D1 Database
-[[d1_databases]]
-binding = "DB"
-database_name = "domainpricingdb"
-
-# Cấu hình Static Assets cho thư mục chứa file CSV
+# Static Assets: cho phép Worker đọc file CSV/JSON trong thư mục static/ lúc runtime
+# https://developers.cloudflare.com/workers/static-assets/
 [assets]
-directory = "./csv"
+directory = "./static"
+binding = "ASSETS"
+
+# Các secret cần set thủ công (KHÔNG khai báo giá trị ở đây):
+#   wrangler secret put TELEGRAM_BOT_TOKEN
+#   wrangler secret put TELEGRAM_WEBHOOK_SECRET
+#   wrangler secret put CLOUDFLARE_API_TOKEN
+#   wrangler secret put CLOUDFLARE_ACCOUNT_ID
+#
+# Biến thường (không nhạy cảm) có thể để trong [vars] nếu muốn:
+# [vars]
+# SITE_BASE_URL = "https://domainpricing.uk"
