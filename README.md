@@ -1,15 +1,15 @@
 # DomainPricingBot
 
-Telegram Bot check giá domain qua Cloudflare Registrar API, chạy trên Cloudflare Workers.
-Website đi kèm: https://domainpricing.uk (chưa mua domain)
+Telegram Bot for checking domain pricing via the Cloudflare Registrar API, running on Cloudflare Workers.
+Companion website: https://domainpricing.uk (domain not yet purchased)
 
-## Cấu trúc
+## Structure
 
 ```
 .
 ├── src/
-│   └── index.ts          # Toàn bộ logic Worker (1 file duy nhất)
-├── static/                # CSV giá của các nhà đăng ký, đọc qua Workers Static Assets
+│   └── index.ts          # All Worker logic (single file)
+├── static/                # Registrar pricing CSVs, read via Workers Static Assets
 │   ├── spaceship.com.csv
 │   ├── godaddy.com.csv
 │   ├── ...
@@ -19,28 +19,28 @@ Website đi kèm: https://domainpricing.uk (chưa mua domain)
 └── tsconfig.json
 ```
 
-## Cách hoạt động
+## How it works
 
-1. **Chat thường** (không phải lệnh `/...`):
-   - Gửi 1 domain đầy đủ (vd `example.com`) → bot check đúng domain đó qua Cloudflare Registrar API.
-   - Gửi 1 từ khoá (vd `example`) → bot ghép với 20 TLD phổ biến và check hàng loạt.
-   - Giá hiển thị lấy trực tiếp từ Cloudflare Registrar API (`tier: standard`).
-   - Domain premium (`tier: premium`) → hiển thị "Domain premium", link trỏ Cloudflare.
-   - Domain unavailable → hiển thị "Domain unavailable", link Whois (`/whois?whois=domain.com`).
+1. **Plain chat** (not a `/...` command):
+   - Send a full domain (e.g. `example.com`) → the bot checks that exact domain via the Cloudflare Registrar API.
+   - Send a keyword (e.g. `example`) → the bot combines it with 20 popular TLDs and checks them in bulk.
+   - Pricing shown comes directly from the Cloudflare Registrar API (`tier: standard`).
+   - Premium domains (`tier: premium`) → shown as "Domain premium", link points to Cloudflare.
+   - Unavailable domains → shown as "Domain unavailable", link points to Whois (`/whois?whois=domain.com`).
 
-2. **Lệnh nhà cung cấp** (`/spaceship`, `/name`, `/godaddy`, ...):
-   - Vẫn gọi Cloudflare Registrar API để biết `tier`/`registrable`.
-   - Nếu `tier: standard` và registrable → lấy giá từ file CSV tương ứng trong `static/` (không gọi API của nhà cung cấp đó).
-   - Nếu TLD không có trong CSV → `❌ Unsupported domain`.
-   - Nếu `tier: premium` → hiển thị "Domain premium", link trỏ tên nhà cung cấp (vd "Spaceship").
+2. **Provider commands** (`/spaceship`, `/name`, `/godaddy`, ...):
+   - Still calls the Cloudflare Registrar API to determine `tier`/`registrable`.
+   - If `tier: standard` and registrable → the price is looked up from the matching CSV file in `static/` (that provider's own API is never called).
+   - If the TLD is not found in the CSV → `❌ Unsupported domain`.
+   - If `tier: premium` → shown as "Domain premium", link points to the provider name (e.g. "Spaceship").
 
-3. Bảng kết quả được gửi dưới dạng **Telegram Rich Message** (`sendRichMessage`, Bot API 10.1+) dùng `RichBlockTable` với `colspan` để gộp ô "Domain unavailable"/"Domain premium". Nếu client/API không hỗ trợ, bot tự động fallback sang tin nhắn HTML thường.
+3. Result tables are sent as a **Telegram Rich Message** (`sendRichMessage`, Bot API 10.1+) using `RichBlockTable` with `colspan` to merge the "Domain unavailable"/"Domain premium" cell. If the client/API doesn't support it, the bot automatically falls back to a plain HTML message.
 
-## Bảng ánh xạ lệnh → CSV
+## Command → CSV mapping
 
-Khai báo cứng trong `PROVIDER_MAP` (`src/index.ts`), không quét thư mục:
+Hardcoded in `PROVIDER_MAP` (`src/index.ts`), no directory scanning:
 
-| Lệnh | File CSV | Tên hiển thị |
+| Command | CSV file | Display name |
 |---|---|---|
 | /spaceship | spaceship.com.csv | Spaceship |
 | /name | name.com.csv | Name.com |
@@ -58,11 +58,11 @@ Khai báo cứng trong `PROVIDER_MAP` (`src/index.ts`), không quét thư mục:
 | /squarespace | squarespace.com.csv | Squarespace |
 | /101domain | 101domain.com.csv | 101domain |
 
-> ⚠️ Các file CSV trong `static/` hiện tại (trừ `spaceship.com.csv`) là **placeholder cần bạn thay bằng file thật** theo đúng format `tld,registration,renewal`.
+> ⚠️ The CSV files in `static/` (other than `spaceship.com.csv`) are currently **placeholders you need to replace with real data**, following the `tld,registration,renewal` format.
 
 ## Setup
 
-### 1. Cài đặt
+### 1. Install dependencies
 
 ```bash
 npm install
@@ -72,8 +72,8 @@ npm install
 
 ```bash
 wrangler secret put TELEGRAM_BOT_TOKEN
-wrangler secret put TELEGRAM_WEBHOOK_SECRET   # chuỗi bí mật tự đặt (A-Z a-z 0-9 _ -)
-wrangler secret put CLOUDFLARE_API_TOKEN      # token có quyền Registrar:Read
+wrangler secret put TELEGRAM_WEBHOOK_SECRET   # a secret string you choose (A-Z a-z 0-9 _ -)
+wrangler secret put CLOUDFLARE_API_TOKEN      # token with Registrar:Read permission
 wrangler secret put CLOUDFLARE_ACCOUNT_ID
 ```
 
@@ -83,9 +83,9 @@ wrangler secret put CLOUDFLARE_ACCOUNT_ID
 npm run deploy
 ```
 
-Sau khi deploy, bạn sẽ có URL dạng `https://domain-pricing-bot.<subdomain>.workers.dev`.
+After deploying, you'll get a URL like `https://domainpricingbot.<subdomain>.workers.dev`.
 
-### 4. Đăng ký webhook với Telegram
+### 4. Register the webhook with Telegram
 
 ```bash
 curl -X POST "https://api.telegram.org/bot<TELEGRAM_BOT_TOKEN>/setWebhook" \
@@ -96,7 +96,7 @@ curl -X POST "https://api.telegram.org/bot<TELEGRAM_BOT_TOKEN>/setWebhook" \
   }'
 ```
 
-### 5. Đăng ký danh sách lệnh với BotFather (tuỳ chọn, endpoint tiện ích)
+### 5. Register the command list with BotFather (optional, utility endpoint)
 
 ```bash
 curl "https://<worker-url>/setup-commands"
@@ -108,7 +108,7 @@ curl "https://<worker-url>/setup-commands"
 npm run typecheck
 ```
 
-## Ghi chú
+## Notes
 
-- `sendRichMessage` / `RichBlockTable` là tính năng Bot API 10.1 (June 2026). Đảm bảo dùng client Telegram đủ mới để thấy bảng hiển thị đúng; nếu không, bot tự fallback về tin nhắn HTML.
-- Đường dẫn `/whois?whois=domain.com` và `/redirect?provider=...&domain=...` là các route cần bạn tự triển khai trên website `domainpricing.uk`.
+- `sendRichMessage` / `RichBlockTable` is a Bot API 10.1 feature (June 2026). Make sure to use a recent enough Telegram client to see the table rendered correctly; otherwise the bot falls back to a plain HTML message.
+- The routes `/whois?whois=domain.com` and `/redirect?provider=...&domain=...` are expected to be implemented on your `domainpricing.uk` website.

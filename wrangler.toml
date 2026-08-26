@@ -1,4 +1,4 @@
-name = "domain-pricing-bot"
+name = "domainpricingbot"
 main = "src/index.ts"
 compatibility_date = "2025-06-01"
 
